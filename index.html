@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Бантуми (Kalah)</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <h1>БАНТУМИ</h1>
+  <p class="subtitle">Классическая игра Kalah</p>
+
+  <!-- Панель настроек -->
+  <div id="settings-panel">
+    <label>
+      Режим:
+      <select id="mode-select">
+        <option value="vs-ai" selected>Против ИИ</option>
+        <option value="two-players">Два игрока</option>
+      </select>
+    </label>
+    <label>
+      Сложность ИИ:
+      <select id="diff-select">
+        <option value="easy">Лёгкий</option>
+        <option value="medium" selected>Средний</option>
+        <option value="hard">Сложный</option>
+      </select>
+    </label>
+    <label>
+      Камней в лунке: <span id="stones-val">4</span>
+      <input type="range" id="stones-range" min="3" max="6" value="4" step="1">
+    </label>
+  </div>
+
+  <!-- Статус -->
+  <div id="status-bar" class="p1-turn">Ход: Игрок</div>
+
+  <!-- Индикатор раздумий ИИ -->
+  <div id="ai-thinking">
+    <div class="spinner"></div>
+    ИИ думает...
+  </div>
+
+  <!-- Доска -->
+  <div id="board-wrapper">
+    <div id="board">
+
+      <!-- Калах Игрока 2 (слева вверху) -->
+      <div class="kalah p2-kalah" id="kalah-p2">
+        <span class="kalah-label">Игрок 2</span>
+        <span class="stone-count" id="kalah-p2-count">0</span>
+        <div class="turn-indicator" id="indicator-p2"></div>
+      </div>
+
+      <!-- Ряд лунок Игрока 2 (верхний, справа-налево) -->
+      <div class="pits-row" id="row-p2"></div>
+
+      <!-- Ряд лунок Игрока 1 (нижний, слева-направо) -->
+      <div class="pits-row" id="row-p1"></div>
+
+      <!-- Калах Игрока 1 (справа внизу) -->
+      <div class="kalah p1-kalah" id="kalah-p1">
+        <span class="kalah-label">Игрок 1</span>
+        <span class="stone-count" id="kalah-p1-count">0</span>
+        <div class="turn-indicator" id="indicator-p1"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Счёт -->
+  <div id="score-panel">
+    <div class="score-item p1">
+      <div class="name">Игрок 1</div>
+      <div class="value" id="score-p1">0</div>
+    </div>
+    <div class="score-item p2">
+      <div class="name">Игрок 2 / ИИ</div>
+      <div class="value" id="score-p2">0</div>
+    </div>
+  </div>
+
+  <!-- Кнопки -->
+  <div id="controls">
+    <button class="btn btn-primary" id="btn-new">Новая игра</button>
+    <button class="btn btn-secondary" id="btn-undo" disabled>Отменить ход</button>
+  </div>
+
+  <!-- Журнал ходов -->
+  <div id="log-panel">
+    <h3>Журнал ходов</h3>
+    <ul id="move-log"></ul>
+  </div>
+
+  <!-- Правила игры -->
+  <div id="rules-section">
+    <button id="rules-toggle" class="btn btn-secondary">
+      Правила игры <span class="arrow">▼</span>
+    </button>
+    <div id="rules-content">
+      <ul>
+        <li>На доске два ряда по <strong>6 лунок</strong> и два <strong>калаха</strong> (хранилища) по краям.</li>
+        <li>В начале в каждой лунке одинаковое количество камней (по умолчанию 4).</li>
+        <li>Игрок выбирает лунку на <em>своей</em> стороне и раскладывает камни по одному <strong>против часовой стрелки</strong>, включая свой калах, но <strong>пропуская</strong> калах противника.</li>
+        <li><strong>Бонусный ход:</strong> если последний камень попал в ваш калах — вы ходите ещё раз.</li>
+        <li><strong>Захват:</strong> если последний камень попал в вашу <em>пустую</em> лунку, вы забираете его и все камни из <em>противоположной</em> лунки противника в свой калах.</li>
+        <li><strong>Конец игры:</strong> когда у одного из игроков заканчиваются камни — каждый забирает оставшиеся свои камни в калах.</li>
+        <li><strong>Победитель</strong> — у кого в калахе больше камней.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Оверлей конца игры -->
+  <div id="overlay">
+    <div id="overlay-box">
+      <h2>Игра окончена</h2>
+      <p id="overlay-result"></p>
+      <p id="overlay-scores"></p>
+      <button class="btn btn-primary" id="btn-play-again">Играть снова</button>
+    </div>
+  </div>
+
+  <!-- Подключение скриптов (порядок важен: game → ai → ui) -->
+  <script src="js/game.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/ui.js"></script>
+
+</body>
+</html>
