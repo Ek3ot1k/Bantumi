@@ -9,25 +9,10 @@
 <body>
 
   <h1>БАНТУМИ</h1>
-  <p class="subtitle">Классическая игра Kalah</p>
+  <p class="subtitle">Классическая игра Kalah · 2 игрока</p>
 
   <!-- Панель настроек -->
   <div id="settings-panel">
-    <label>
-      Режим:
-      <select id="mode-select">
-        <option value="vs-ai" selected>Против ИИ</option>
-        <option value="two-players">Два игрока</option>
-      </select>
-    </label>
-    <label>
-      Сложность ИИ:
-      <select id="diff-select">
-        <option value="easy">Лёгкий</option>
-        <option value="medium" selected>Средний</option>
-        <option value="hard">Сложный</option>
-      </select>
-    </label>
     <label>
       Камней в лунке: <span id="stones-val">4</span>
       <input type="range" id="stones-range" min="3" max="6" value="4" step="1">
@@ -35,19 +20,13 @@
   </div>
 
   <!-- Статус -->
-  <div id="status-bar" class="p1-turn">Ход: Игрок</div>
-
-  <!-- Индикатор раздумий ИИ -->
-  <div id="ai-thinking">
-    <div class="spinner"></div>
-    ИИ думает...
-  </div>
+  <div id="status-bar" class="p1-turn">Ход: Игрок 1</div>
 
   <!-- Доска -->
   <div id="board-wrapper">
     <div id="board">
 
-      <!-- Калах Игрока 2 (слева вверху) -->
+      <!-- Калах Игрока 2 (слева) -->
       <div class="kalah p2-kalah" id="kalah-p2">
         <span class="kalah-label">Игрок 2</span>
         <span class="stone-count" id="kalah-p2-count">0</span>
@@ -60,7 +39,7 @@
       <!-- Ряд лунок Игрока 1 (нижний, слева-направо) -->
       <div class="pits-row" id="row-p1"></div>
 
-      <!-- Калах Игрока 1 (справа внизу) -->
+      <!-- Калах Игрока 1 (справа) -->
       <div class="kalah p1-kalah" id="kalah-p1">
         <span class="kalah-label">Игрок 1</span>
         <span class="stone-count" id="kalah-p1-count">0</span>
@@ -77,7 +56,7 @@
       <div class="value" id="score-p1">0</div>
     </div>
     <div class="score-item p2">
-      <div class="name">Игрок 2 / ИИ</div>
+      <div class="name">Игрок 2</div>
       <div class="value" id="score-p2">0</div>
     </div>
   </div>
@@ -102,11 +81,11 @@
     <div id="rules-content">
       <ul>
         <li>На доске два ряда по <strong>6 лунок</strong> и два <strong>калаха</strong> (хранилища) по краям.</li>
-        <li>В начале в каждой лунке одинаковое количество камней (по умолчанию 4).</li>
+        <li>В начале в каждой лунке одинаковое количество камней (настраивается).</li>
         <li>Игрок выбирает лунку на <em>своей</em> стороне и раскладывает камни по одному <strong>против часовой стрелки</strong>, включая свой калах, но <strong>пропуская</strong> калах противника.</li>
         <li><strong>Бонусный ход:</strong> если последний камень попал в ваш калах — вы ходите ещё раз.</li>
         <li><strong>Захват:</strong> если последний камень попал в вашу <em>пустую</em> лунку, вы забираете его и все камни из <em>противоположной</em> лунки противника в свой калах.</li>
-        <li><strong>Конец игры:</strong> когда у одного из игроков заканчиваются камни — каждый забирает оставшиеся свои камни в калах.</li>
+        <li><strong>Конец игры:</strong> когда у одного из игроков заканчиваются все камни на его стороне.</li>
         <li><strong>Победитель</strong> — у кого в калахе больше камней.</li>
       </ul>
     </div>
@@ -122,9 +101,8 @@
     </div>
   </div>
 
-  <!-- Подключение скриптов (порядок важен: game → ai → ui) -->
+  <!-- Скрипты (порядок важен: game → ui) -->
   <script src="js/game.js"></script>
-  <script src="js/ai.js"></script>
   <script src="js/ui.js"></script>
 
 </body>
