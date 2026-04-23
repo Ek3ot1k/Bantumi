@@ -14,8 +14,8 @@ mvn spring-boot:run
 ### 2. Фронтенд (Python)
 ```bash
 cd frontend
-pip install -r requirements.txt
-python main.py
+pip3 install -r requirements.txt
+python3 main.py
 ```
 
 > Сначала запустить бэкенд, потом фронтенд.
