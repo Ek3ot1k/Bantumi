@@ -9,9 +9,6 @@ import java.util.Arrays;
 import java.util.Deque;
 
 /**
- * Игровая логика Бантуми (Kalah).
- * Автор: Хусейнов Амин (backend)
- *
  * Структура board[14]:
  *   [0..5]  — лунки Игрока 1
  *   [6]     — Калах Игрока 1
@@ -36,23 +33,16 @@ public class GameService {
         initBoard(4);
     }
 
-    // ============================
-    // Публичные методы (API)
-    // ============================
-
-    /** Начать новую партию с заданным количеством камней в лунке */
     public GameState newGame(int stones) {
         this.stonesPerPit = Math.max(3, Math.min(6, stones)); // клампируем 3..6
         initBoard(this.stonesPerPit);
         return buildState();
     }
 
-    /** Получить текущее состояние без изменений */
     public GameState getState() {
         return buildState();
     }
 
-    /** Выполнить ход из лунки pitIndex */
     public MoveResult makeMove(int pitIndex) {
         // Валидация
         if (gameOver)
@@ -100,8 +90,7 @@ public class GameService {
                 captured = true;
             }
         }
-
-        // Проверяем конец игры
+\
         boolean p1Empty = arePitsEmpty(1);
         boolean p2Empty = arePitsEmpty(2);
 
@@ -136,11 +125,6 @@ public class GameService {
         return buildState();
     }
 
-    // ============================
-    // Вспомогательные методы
-    // ============================
-
-    /** Инициализация доски */
     private void initBoard(int stones) {
         board = new int[14];
         for (int i = 0; i < 14; i++) {

@@ -1,9 +1,5 @@
 package com.bantumi.model;
 
-/**
- * Результат выполненного хода.
- * Автор: Хусейнов Амин
- */
 public class MoveResult {
 
     // Признак корректного хода
