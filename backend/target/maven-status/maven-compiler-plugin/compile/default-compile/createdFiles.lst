@@ -1,5 +1,11 @@
-com/bantumi/BantumiApplication.class
+com/bantumi/repository/GameRepository.class
+com/bantumi/service/AiService.class
+com/bantumi/repository/MoveRepository.class
 com/bantumi/model/GameState.class
-com/bantumi/service/GameService.class
 com/bantumi/controller/GameController.class
+com/bantumi/config/WebConfig.class
+com/bantumi/BantumiApplication.class
+com/bantumi/service/GameService.class
+com/bantumi/entity/Move.class
 com/bantumi/model/MoveResult.class
+com/bantumi/entity/Game.class

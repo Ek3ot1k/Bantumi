@@ -1,5 +1,11 @@
 /Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/service/GameService.java
 /Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/controller/GameController.java
 /Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/model/GameState.java
+/Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/repository/GameRepository.java
+/Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/entity/Game.java
 /Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/model/MoveResult.java
+/Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/entity/Move.java
+/Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/service/AiService.java
+/Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/config/WebConfig.java
 /Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/BantumiApplication.java
+/Users/aminhuseynov/stud_practice/backend/src/main/java/com/bantumi/repository/MoveRepository.java
