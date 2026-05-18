@@ -26,6 +26,7 @@ TEXT_LIGHT  = "#f5e6c8"
 TEXT_DIM    = "#a07848"
 P1_COLOR    = "#e05040"
 P2_COLOR    = "#4090d0"
+AI_COLOR    = "#a060e0"   # фиолетовый для ИИ
 GOLD        = "#f0c040"
 BTN_BG      = "#7b4f27"
 BTN_HOVER   = "#9a6535"
@@ -38,7 +39,7 @@ class BantumiApp:
     PIT_R    = 33                # радиус лунки
     KALAH_RX = 46                # полуширина Калаха
     KALAH_RY = 112               # полувысота Калаха
-    ROW_P2_Y = 100               # центр верхнего ряда (Игрок 2)
+    ROW_P2_Y = 100               # центр верхнего ряда (Игрок 2 / ИИ)
     ROW_P1_Y = 220               # центр нижнего ряда (Игрок 1)
     MID_Y    = 160               # середина доски
     KAL2_X   = 68                # центр Калаха Игрока 2 (слева)
@@ -48,6 +49,7 @@ class BantumiApp:
     def __init__(self):
         self.state     = None
         self.pit_items = {}   # oval_id → pit_index
+        self.mode      = "PVP"  # текущий режим игры
 
         # Корневое окно — ПЕРВЫМ, потом все tk-переменные
         self.root = tk.Tk()
@@ -56,6 +58,7 @@ class BantumiApp:
         self.root.resizable(False, False)
 
         self.stones_var = tk.IntVar(value=4)
+        self.mode_var   = tk.StringVar(value="PVP")
 
         self._build_ui()
         self._fetch_state()
@@ -66,12 +69,14 @@ class BantumiApp:
         # Заголовок
         tk.Label(self.root, text="БАНТУМИ", bg=BG, fg=BOARD_EDGE,
                  font=("Arial", 26, "bold")).pack(pady=(14, 2))
-        tk.Label(self.root, text="Классическая игра Kalah  ·  2 игрока",
-                 bg=BG, fg=TEXT_DIM, font=("Arial", 10)).pack()
+        self.subtitle_lbl = tk.Label(
+            self.root, text="Классическая игра Kalah  ·  2 игрока",
+            bg=BG, fg=TEXT_DIM, font=("Arial", 10))
+        self.subtitle_lbl.pack()
 
         # Настройки: количество камней
         cfg = tk.Frame(self.root, bg=BG)
-        cfg.pack(pady=8)
+        cfg.pack(pady=(8, 4))
         tk.Label(cfg, text="Камней в лунке:", bg=BG, fg=TEXT_DIM,
                  font=("Arial", 10)).pack(side=tk.LEFT, padx=(0, 6))
         for v in (3, 4, 5, 6):
@@ -81,6 +86,24 @@ class BantumiApp:
                 activebackground=BG, activeforeground=TEXT_LIGHT,
                 font=("Arial", 10), command=self._new_game
             ).pack(side=tk.LEFT, padx=4)
+
+        # Настройки: режим игры
+        mf = tk.Frame(self.root, bg=BG)
+        mf.pack(pady=(0, 4))
+        tk.Label(mf, text="Режим игры:", bg=BG, fg=TEXT_DIM,
+                 font=("Arial", 10)).pack(side=tk.LEFT, padx=(0, 6))
+        tk.Radiobutton(
+            mf, text="2 игрока (PvP)", variable=self.mode_var, value="PVP",
+            bg=BG, fg=TEXT_LIGHT, selectcolor="#5d3a1a",
+            activebackground=BG, activeforeground=TEXT_LIGHT,
+            font=("Arial", 10), command=self._on_mode_change
+        ).pack(side=tk.LEFT, padx=4)
+        tk.Radiobutton(
+            mf, text="Против ИИ (PvE)", variable=self.mode_var, value="PVE",
+            bg=BG, fg=AI_COLOR, selectcolor="#5d3a1a",
+            activebackground=BG, activeforeground=AI_COLOR,
+            font=("Arial", 10), command=self._on_mode_change
+        ).pack(side=tk.LEFT, padx=4)
 
         # Статус
         self.status_var = tk.StringVar(value="Ход: Игрок 1")
@@ -103,11 +126,13 @@ class BantumiApp:
         self.score1_var = tk.StringVar(value="0")
         tk.Label(sf, textvariable=self.score1_var, bg=BG, fg=P1_COLOR,
                  font=("Arial", 20, "bold")).grid(row=0, column=1, padx=4)
-        tk.Label(sf, text="Игрок 2:", bg=BG, fg=TEXT_DIM,
-                 font=("Arial", 11)).grid(row=0, column=2, padx=(24, 8))
+        self.score2_label = tk.Label(sf, text="Игрок 2:", bg=BG, fg=TEXT_DIM,
+                 font=("Arial", 11))
+        self.score2_label.grid(row=0, column=2, padx=(24, 8))
         self.score2_var = tk.StringVar(value="0")
-        tk.Label(sf, textvariable=self.score2_var, bg=BG, fg=P2_COLOR,
-                 font=("Arial", 20, "bold")).grid(row=0, column=3, padx=4)
+        self.score2_value_lbl = tk.Label(sf, textvariable=self.score2_var,
+                 bg=BG, fg=P2_COLOR, font=("Arial", 20, "bold"))
+        self.score2_value_lbl.grid(row=0, column=3, padx=4)
 
         # Кнопки (Frame+Label — единственный способ задать цвет на macOS)
         bf = tk.Frame(self.root, bg=BG)
@@ -167,32 +192,41 @@ class BantumiApp:
         player  = self.state["currentPlayer"]
         landed  = self.state.get("lastLandedPit")
         over    = self.state["gameOver"]
+        is_pve  = self.mode == "PVE"
 
         # Фон доски с рамкой
         self.canvas.create_rectangle(
             8, 8, self.CW - 8, self.CH - 8,
             fill=BOARD_BG, outline=BOARD_EDGE, width=3)
 
-        # Метки строк (внутри доски, у краёв)
+        # Метки строк: в PvE верхний ряд подписан "ИИ"
+        p2_label = "▲ ИИ (Игрок 2)" if is_pve else "▲ ИГРОК 2"
+        p2_color = AI_COLOR if is_pve else P2_COLOR
         self.canvas.create_text(
             self.KAL2_X + self.KALAH_RX + 10, self.ROW_P2_Y - self.PIT_R - 12,
-            text="▲ ИГРОК 2", anchor=tk.W, fill=P2_COLOR,
+            text=p2_label, anchor=tk.W, fill=p2_color,
             font=("Arial", 8, "bold"))
         self.canvas.create_text(
             self.KAL1_X - self.KALAH_RX - 10, self.ROW_P1_Y + self.PIT_R + 12,
             text="ИГРОК 1 ▼", anchor=tk.E, fill=P1_COLOR,
             font=("Arial", 8, "bold"))
 
-        # Kалах Игрока 2 (слева)
-        self._draw_kalah(self.KAL2_X, self.MID_Y, board[13], player=2, active=player==2 and not over)
-        # Kалах Игрока 1 (справа)
-        self._draw_kalah(self.KAL1_X, self.MID_Y, board[6],  player=1, active=player==1 and not over)
+        # Калах Игрока 2 (слева) — в PvE цвет фиолетовый
+        self._draw_kalah(self.KAL2_X, self.MID_Y, board[13],
+                         player=2, active=player == 2 and not over,
+                         color_override=AI_COLOR if is_pve else None)
+        # Калах Игрока 1 (справа)
+        self._draw_kalah(self.KAL1_X, self.MID_Y, board[6],
+                         player=1, active=player == 1 and not over)
 
         # Лунки Игрока 2: индексы 12→7, слева направо
+        # В режиме PvE лунки П2 всегда некликабельны — ходит ИИ
         for col, pit_idx in enumerate([12, 11, 10, 9, 8, 7]):
-            clickable = player == 2 and board[pit_idx] > 0 and not over
+            clickable = player == 2 and board[pit_idx] > 0 and not over and not is_pve
             self._draw_pit(self.PIT_XS[col], self.ROW_P2_Y,
-                           board[pit_idx], pit_idx, clickable, pit_idx == landed)
+                           board[pit_idx], pit_idx, clickable,
+                           pit_idx == landed,
+                           pit_color=AI_COLOR if is_pve else P2_COLOR)
 
         # Лунки Игрока 1: индексы 0→5, слева направо
         for col, pit_idx in enumerate([0, 1, 2, 3, 4, 5]):
@@ -200,8 +234,8 @@ class BantumiApp:
             self._draw_pit(self.PIT_XS[col], self.ROW_P1_Y,
                            board[pit_idx], pit_idx, clickable, pit_idx == landed)
 
-    def _draw_kalah(self, cx, cy, count, player, active):
-        color = P1_COLOR if player == 1 else P2_COLOR
+    def _draw_kalah(self, cx, cy, count, player, active, color_override=None):
+        color = color_override or (P1_COLOR if player == 1 else P2_COLOR)
         rx, ry = self.KALAH_RX, self.KALAH_RY
 
         # Внешнее свечение при активном ходе
@@ -214,21 +248,20 @@ class BantumiApp:
             cx - rx, cy - ry, cx + rx, cy + ry,
             fill=KALAH_FILL, outline=BOARD_EDGE, width=2)
 
-        name = "Игрок 1" if player == 1 else "Игрок 2"
+        name = "Игрок 1" if player == 1 else ("ИИ" if self.mode == "PVE" else "Игрок 2")
         self.canvas.create_text(cx, cy - 48, text=name,
                                  fill=TEXT_DIM, font=("Arial", 8))
         self.canvas.create_text(cx, cy + 10, text=str(count),
                                  fill=color, font=("Arial", 24, "bold"))
-        # Стрелка-индикатор активного хода
         if active:
             arrow = "▶" if player == 1 else "◀"
             self.canvas.create_text(cx, cy + 46, text=arrow,
                                      fill=color, font=("Arial", 12))
 
-    def _draw_pit(self, cx, cy, count, pit_idx, clickable, highlighted):
+    def _draw_pit(self, cx, cy, count, pit_idx, clickable, highlighted,
+                  pit_color=None):
         r = self.PIT_R
 
-        # Цвет заливки
         if highlighted:
             fill = "#906030"
         elif clickable:
@@ -243,8 +276,7 @@ class BantumiApp:
             cx - r, cy - r, cx + r, cy + r,
             fill=fill, outline=outline_color, width=outline_w)
 
-        # Число камней
-        text_color = TEXT_LIGHT if count > 0 else "#5a3a18"
+        text_color = (pit_color or TEXT_LIGHT) if count > 0 else "#5a3a18"
         self.canvas.create_text(cx, cy - 7, text=str(count),
                                  fill=text_color, font=("Arial", 13, "bold"))
 
@@ -257,7 +289,6 @@ class BantumiApp:
                     cx+dx-4, cy+dy+4, cx+dx+4, cy+dy+12,
                     fill="#c8a060", outline="")
 
-        # Привязка событий для кликабельных лунок
         if clickable:
             self.pit_items[item] = pit_idx
             self.canvas.tag_bind(item, "<Button-1>",
@@ -273,20 +304,43 @@ class BantumiApp:
         self._draw_board()
         board  = self.state["board"]
         player = self.state["currentPlayer"]
+        is_pve = self.mode == "PVE"
 
         self.score1_var.set(str(board[6]))
         self.score2_var.set(str(board[13]))
 
+        # В PvE режиме — подпись «ИИ» и фиолетовый цвет
+        if is_pve:
+            self.score2_label.config(text="ИИ:")
+            self.score2_value_lbl.config(fg=AI_COLOR)
+        else:
+            self.score2_label.config(text="Игрок 2:")
+            self.score2_value_lbl.config(fg=P2_COLOR)
+
         if self.state["gameOver"]:
             w = self.state.get("winner")
-            msg = "Ничья!" if w == 0 else f"Игрок {w} победил!"
+            if w == 0:
+                msg = "Ничья!"
+            elif w == 1:
+                msg = "Игрок 1 победил!"
+            else:
+                msg = "ИИ победил!" if is_pve else "Игрок 2 победил!"
             self.status_var.set(msg)
             self.status_lbl.configure(fg=GOLD)
             self._set_undo_state(False)
             self.root.after(600, lambda: self._show_result(w, board))
         else:
-            self.status_var.set(f"Ход: Игрок {player}")
-            self.status_lbl.configure(fg=P1_COLOR if player == 1 else P2_COLOR)
+            if player == 2 and is_pve:
+                # В PvE сюда попасть не должны (ИИ ходит на сервере),
+                # но на всякий случай показываем
+                self.status_var.set("ИИ думает...")
+                self.status_lbl.configure(fg=AI_COLOR)
+            elif player == 1:
+                self.status_var.set("Ход: Игрок 1")
+                self.status_lbl.configure(fg=P1_COLOR)
+            else:
+                self.status_var.set("Ход: Игрок 2")
+                self.status_lbl.configure(fg=P2_COLOR)
             can_undo = self.state["moveCount"] > 0
             self._set_undo_state(can_undo)
 
@@ -294,11 +348,14 @@ class BantumiApp:
             self.log_box.insert(0, log_text)
 
     def _show_result(self, winner, board):
+        is_pve = self.mode == "PVE"
         if winner == 0:
             msg = "Ничья! Оба игрока набрали поровну."
+        elif winner == 1:
+            msg = "Игрок 1 победил!"
         else:
-            msg = f"Игрок {winner} победил!"
-        detail = f"Счёт:  Игрок 1 — {board[6]},  Игрок 2 — {board[13]}"
+            msg = "ИИ победил! Попробуйте ещё раз." if is_pve else "Игрок 2 победил!"
+        detail = f"Счёт:  Игрок 1 — {board[6]},  {'ИИ' if is_pve else 'Игрок 2'} — {board[13]}"
         ans = messagebox.askquestion("Игра окончена",
                                      f"{msg}\n{detail}\n\nСыграть ещё раз?",
                                      icon="info")
@@ -307,9 +364,19 @@ class BantumiApp:
 
     # ── Обработчики событий ───────────────────────────────────────────────────
 
+    def _on_mode_change(self):
+        """Смена режима игры — сразу начинаем новую партию."""
+        self.mode = self.mode_var.get()
+        is_pve = self.mode == "PVE"
+        self.subtitle_lbl.config(
+            text="Классическая игра Kalah  ·  Против ИИ" if is_pve
+                 else "Классическая игра Kalah  ·  2 игрока"
+        )
+        self._new_game()
+
     def _on_pit_click(self, pit_idx):
         try:
-            resp = requests.post(f"{BASE_URL}/move/{pit_idx}", timeout=3)
+            resp = requests.post(f"{BASE_URL}/move/{pit_idx}", timeout=5)
             resp.raise_for_status()
             data = resp.json()
         except requests.exceptions.RequestException as e:
@@ -325,16 +392,20 @@ class BantumiApp:
         who = self.state["currentPlayer"] if data.get("bonusTurn") \
               else (2 if self.state["currentPlayer"] == 1 else 1)
         pit_num = pit_idx + 1 if pit_idx <= 5 else pit_idx - 6
-        log = f"#{self.state['moveCount']}  Игрок {who}: лунка {pit_num}"
+        who_name = f"Игрок {who}" if who == 1 or self.mode == "PVP" else "ИИ"
+        log = f"#{self.state['moveCount']}  {who_name}: лунка {pit_num}"
         if data.get("bonusTurn"): log += " — бонусный ход!"
         if data.get("captured"):  log += " — захват!"
 
         self._update_ui(log_text=log)
 
     def _new_game(self):
+        self.mode = self.mode_var.get()
         try:
-            resp = requests.post(f"{BASE_URL}/new",
-                                 params={"stones": self.stones_var.get()}, timeout=3)
+            resp = requests.post(
+                f"{BASE_URL}/new",
+                params={"stones": self.stones_var.get(), "mode": self.mode},
+                timeout=3)
             resp.raise_for_status()
             self.state = resp.json()
         except requests.exceptions.RequestException as e:
@@ -358,7 +429,6 @@ class BantumiApp:
         self._update_ui()
 
     def _fetch_state(self):
-        # Сетевой запрос — ловим только ошибки соединения
         try:
             resp = requests.get(f"{BASE_URL}/state", timeout=3)
             resp.raise_for_status()
@@ -370,7 +440,6 @@ class BantumiApp:
                 "Запустите Java-сервер:\n"
                 "  cd backend && mvn spring-boot:run")
             return
-        # Отрисовка — ошибки UI выводим отдельно
         try:
             self._update_ui()
         except Exception as e:
