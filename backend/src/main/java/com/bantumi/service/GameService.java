@@ -168,20 +168,20 @@ public class GameService {
         // Сохраняем обновлённую партию
         gameRepository.save(game);
 
-        // В режиме PVE — делаем ход AI, если не бонусный ход и игра не окончена и сейчас П2
-        if ("PVE".equals(game.getGameMode())
+        // В режиме PVE — ИИ ходит пока его очередь (включая бонусные ходы ИИ).
+        // !bonusTurn гарантирует: если П1 получил бонусный ход — ИИ не вмешивается.
+        while ("PVE".equals(game.getGameMode())
                 && !bonusTurn
                 && !game.isGameOver()
                 && game.getCurrentPlayer() == 2) {
 
-            // Сохраняем снимок для undo хода AI
-            int[] boardBeforeAi = boardFromString(game.getBoardState());
-            String aiSnapshot = snapshotToString(boardBeforeAi, 2, game.getWinner());
+            // Снимок состояния ДО хода ИИ (для undo)
+            String aiSnapshot = snapshotToString(
+                    boardFromString(game.getBoardState()), 2, game.getWinner());
 
             aiService.makeAiMove(game);
-            game.setMoveCount(game.getMoveCount()); // уже обновлено внутри AiService
 
-            // Записываем ход AI в историю
+            // Записываем ход ИИ в историю
             Move aiMove = new Move();
             aiMove.setGame(game);
             aiMove.setPitIndex(game.getLastLandedPit() != null ? game.getLastLandedPit() : -1);
@@ -191,9 +191,10 @@ public class GameService {
             aiMove.setCaptured(false);
             aiMove.setBoardSnapshot(aiSnapshot);
             moveRepository.save(aiMove);
-
-            // Сохраняем состояние после хода AI
             gameRepository.save(game);
+
+            // Если ИИ получил бонусный ход — currentPlayer остался 2,
+            // цикл продолжится и ИИ сделает ещё один ход автоматически
         }
 
         return new MoveResult(true, null, bonusTurn, captured, buildState(game));
