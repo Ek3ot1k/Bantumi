@@ -298,7 +298,8 @@ class BantumiApp:
             self.canvas.tag_bind(item, "<Leave>",
                 lambda e, i=item, f=fill: self.canvas.itemconfig(i, fill=f))
 
-    # ── Обновление UI ─────────────────────────────────────────────────────────
+    
+    # ── Обновление UI ───────────────────────────────────────────────────────── 
 
     def _update_ui(self, log_text=None):
         self._draw_board()
